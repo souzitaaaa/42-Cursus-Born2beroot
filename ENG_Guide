@@ -1,0 +1,540 @@
+							*Create VM*
+
+If you don't put her in the sgoinfre folder, the installation will fail
+Go to settings and select to reserve memory dynamically to reserv x memory from your computer
+Configure the storage and choose the ISO that you installed (in this caso Debian)
+
+Hostname: dinoguei42
+Domain: [empty]
+RootPassword: [password]
+
+Username: dinoguei
+UserPassword: [password]
+
+Use the option "Guied - use entire disk and set up encrypted LVM" because the subject asked for it
+Choose the disk that we want to partition
+Choose the third option "Separate /home, /var, and /tmp partitions"
+Click in "cancel" when appears that will delete the data from the disk
+
+Encryption Passphrase: [password]
+
+Choose that it is not necessary to install extra media
+Leave the HTTP empty
+Put that you don't want to participate in the "package usage survey"
+Remove all the software options
+Install GRUB boot in the hard disk and choose the option "/dev/sda(ATA_VBOX_HARDDISK)"
+
+							*Configure VM*
+
+Insert the encrypted password
+Enter in the user you created
+To enter in the root user you use "su" and put the password
+
+							*Sudo*
+
+<apt install sudo>
+
+	apt: Advanced package tool, is a free-software user interface that deal with the installation and removal of software in debian
+	sudo: Using the prefix "sudo" will allow you to execute a command as in the administrator
+
+<sudo reboot>
+
+	Restarts the machine
+
+<sudo -V>
+
+	-V: Will show you the version of sudo
+
+<sudo adduser {user}>
+
+	It must show that your user already exists
+
+<sudo addgroup user42>
+
+	It will create a group called "user42"
+	It appears the following message "Adding group 'user42' (GID) ...", the GID is the group identifier, or in other words, it's the abbreviation
+
+<sudo adduser {user} {user42}>
+
+<sudo adduser {user} {sudo}>
+
+<getent group {user42}>
+
+<getent group {sudo}>
+
+	getent: Shows the number of entries in the data base, in this case we will see if the user is in the group
+
+<sudo apt update>
+
+	Updates the package sources with their new versions in the repositories
+
+							*SSH*
+
+<sudo apt install openssh-server>
+
+	SSH: Remote access to a server by a safe channel, in which all the information will be encrypted
+
+<sudo service ssh status>
+
+	To verify if the installation sucedded (it musta appear as active)
+
+<nano /etc/ssh/sshd_config>
+
+	We will need to chance a file named "sshd_config", to do that we insert the path
+	Change the "#Port 22" to "Port 4242"
+	Change the "#PermitRootLogin prohibit-password" to "PermitRootLogin no"
+
+<nano /etc/ssh/ssh_config>
+
+	Change the Port to 4242
+
+<sudo service ssh restart>
+
+	We neeed to restart the ssh service so that the modifications we did save
+
+<sudo service ssh status>
+
+	It must show the Port 4242
+
+							*UFW*
+
+<sudo apt install ufw>
+
+	ufw: Uncomplicated Firewall, it's a firewall made to be easy to use, it uses a command line based interface and iptables for configuration
+	iptables: program writed in C that configures rules to the protocol of internet IPv4 or IPv6
+
+<sudo ufw enable>
+
+	To activate the firewall
+
+<sudo ufw allow 4242>
+
+	Activate connections that are mabe by the port 4242
+
+<sudo ufw status>
+
+	Verify if everything is setup up correctly
+
+							*Password Policy*
+
+<touch /etc/sudoers.d/sudo_config>
+
+	We create a file in the path /etc/sudoers.d to setup the password configurations
+
+<mkdir /var/log/sudo>
+
+	Create a directory inside the path /var/log to save all the inputs and outputs utilized
+
+<nano /etc/sudoers.d/sudo_config>
+
+	Edit the file previously created with the following code:
+
+	Defaults	passwd_tries=3
+		Number of tries for wrong password
+	Defaults	badpass_message="[Personalized Message]"
+		Message of wrong password
+	Defaults	logfile="/var/log/sudo/sudo_config"
+		Archive where it will save the sudo commands the user uses
+	Defaults	log_input, log_output
+	Defaults	iolog_dir="/var/log/sudo"
+		It will save in the specified directory inputs and outputs
+	Defaults	requiretty
+		Activate the TTY mode
+			TTY: Shows terminal information, prints the name of the file connected to the input
+	Defaults	secure_path="/usr/local/sbin:/usr/local/bin:usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+		Restrict the directories usable by sudo
+
+<nano /etc/login.defs>
+
+	Edit the login.defs file
+	Change PASS_MAX_DAYS 99999 to 30
+	Change PASS_MIN_DAYS 0 to 2
+
+<sudo apt install libpam-pwquality>
+
+	libpam-pwquality: this package propose is to help checking the quality of the password and rate them based on randomness
+
+<nano /etc/pam.d/common-password>
+
+	In front of "retry=3", add:
+
+	minlen=10
+		Minimum of characters that the pass must contain
+	ucredit=-1
+		Must contain a minimum of one uppercase, we use - since it has to contain 1, if we used +1 we were giving it a maximum of characters
+	dcredit=-1
+		Must contain a minimum of one digit
+	maxrepeat=3
+		We can't have the same character more than 3 consecutive times
+	reject_username
+		It can't contain the username
+	difok=7
+		Must contain at least 7 characters that weren't been used in the old password
+	enforce_for_root
+		Impose this policy on the root user
+
+							*Connect via SSH*
+
+Go to settings and in network, change from NAT to Bridge Adapter
+
+<ssh dinoguei@[ip] -p 4242>
+
+	Connect a real machine to our VM
+	To get the ip use: sudo ip --color addr
+
+							*Script*
+
+Write the script inside usr/local/bin
+
+<uname -a>
+
+	Architecture of the operating system
+	uname: Writes the name of the OS that we are using
+		-a: Utilizes the flags -m, -n, -r, -s and -v
+			-m: Shows the hardware ID that is no the machine system (x86_64)
+			-n: Shows the pc "name" (c1r11s9.42porto.com)
+			-r: Shows the launch number of the OS (5.4.0-132-generic)
+			-s: Shows the name of the system (Linux)
+			-v: Shows the version of the OS (#148-Ubuntu SMP Mon Oct 17 16:02:06 UTC 2022)
+	output: Linux c1r11s9.42porto.com 5.4.0-132-generic #148-Ubuntu SMP Mon Oct 17 16:02:06 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+
+<grep "physical id" /proc/cpuinfo | wc -l>
+
+	Quantify the physical core (CPU)
+	grep: Search and prints lines that match a certain pattern
+		grep "physical id" /proc/cpuinfo: It will print all the lines that have "physical id" inside the "cpuinfo"
+	wc" Prints the ammount of lines, words and byters found in the file
+		-l: prints just the lines
+	If it exists just one processor it will prin 0, but if it exists more it will print the information refering to him, to be more easy to quantify them we just print the number of lines
+
+<grep "processor" /proc/cpuinfo | wc-l>
+
+	Quantifu the virtual core (vCPU), this type of CPU isn't physical, but a logical one utilized by the VM
+
+<free --mega>
+
+	Print the RAM memory
+	free: Shows the quantity of free, used, total, etc of memory in the system
+		--mega: prints that memory in megabytes
+	output:
+                   total        used        free      shared  buff/cache   available
+    Mem:          16457        5165         588        1714       10703        9231
+    Swap:          4294           0        4294
+
+Since we won't need all this information we will reduce it
+
+<free --mega | awk '$1 == "Mem:" {print$3}'>
+
+	Let's print just used memory
+	awk: Select part of the text following the pattern we give it
+		$1 == "Mem:" {print$3}: In the "Mem:" line it will output the third column (Mem included)
+
+<free --mega | awk '$1 == "Mem:" {print$2}'>
+
+	We will print just the total memory
+
+<free --mega | awk '$1 == "Mem:" {printf("(%.2f%%)\n", $3/$2*100)}'>
+
+	We will print the percantage of used memory
+	This time instead of print we will use printf, jsut so we can do the math before outputing it
+	%.2f%%: the %.2f it will make the result with just two decimal houses and the %% is just to insert one %
+	$3/$2*100: The math need to obtain the result
+
+<df -m | grep "/dev/" | grep -v "/boot" | awk '{memory_use += $3} END {print memory_use}'>
+
+	Let's print that memory used by the memory disk
+	df: Is used to obtain a complete summary of the usage in the dis
+		-m: To show in MB
+	grep "/dev/": To show us just the lines that contain "/dev/"
+	grep -v "/boot": To not show us the lines that have "/boot"
+	output:
+	df: /run/user/101354/doc: Operation not permitted
+    /dev/mapper/ubuntu--vg-ubuntu--lv--root       189993   22812    157459  13% /
+    tmpfs                                           7848       1      7848   1% /dev/shm
+    /dev/mapper/ubuntu--vg-ubuntu--lv--goinfre     35525       1     33689   1% /goinfre
+    /dev/loop1                                        56      56         0 100% /snap/core18/2632
+    /dev/loop3                                        64      64         0 100% /snap/core20/1695
+    /dev/loop0                                        56      56         0 100% /snap/core18/2620
+    /dev/loop5                                        92      92         0 100% /snap/lxd/23991
+    /dev/loop8                                        50      50         0 100% /snap/snapd/17883
+    /dev/loop11                                       92      92         0 100% /snap/lxd/24061
+    /dev/loop4p1                                     382     382         0 100% /media/dinoguei/Debian 11.5.0 amd64 n
+    /dev/loop12                                       64      64         0 100% /snap/core20/1738
+
+	awk '{memory_use += $3} END {print memory_use}': We create the variable "memory_use" to storage the sum of the third column and after that we print
+
+<df -m | grep "/dev/" | grep -v "/boot" | awk '{memory_result += $2} END {printf ("%.0fGb\n"), memory_result/1024}'>
+
+	Let's print to the total memory
+	This time the only differences is that we change from the third column to the second and the print changes a little too
+	{print ("%.0fGb\n), memory_result/1024}: We don't want decimal numbers so the %.0f, and we want to print it in Binary GB so we divide the result by 1024
+
+<df -m | grep "/dev/" | grep -v "/boot" | awk '{use += $3} {result += $2} END {printf("(%d%%)\n"), use/result*100}>
+
+	We will print the percentage of used memory
+
+<top -bn1 | grep '%Cpu' | cut -c 9- | xargs | awk '{printf("%.1f"), $1 + $3}'>
+
+ Printing the CPU Load
+ top: displays Linux processors
+  b: outputs top
+  n1: number of time that you want to output top
+ grep "%Cpu:": gets the %Cpu line
+ cut: removes certain parameters in the lines
+  -c: select just the characters
+  9-: cuts until the 9 byte
+ awk: prints the us (user cpu time (or) % CPU time spent in user space) and the sy (system cpu time (or) % CPU time spent in kernel space)
+
+<who -b | awk '$1 == "system" {print $3 " " $4}'>
+
+	Prints the date date and time of the last system's reboot
+	who: Gives information about the users logged in the computer
+		-b: gives infomration about the date and time of the last reboot
+	output:
+		system boot  2022-11-24 12:54
+	awk '$1 == "system" {print $3 " " $4}': IT prints the third and fourth column (2022-11-24 12:54)
+
+<if [ $(lsblk | grep "lvm" | wc -l) -gt 0 ]; then echo yes; else echo no; fi>
+
+	Check it the LVM is active
+	lsblk: gives output to a list of devices in "tree" format
+	output: (example in the terminal of the computer because I can't copy and paste in the VM)
+	NAME            MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+loop0             7:0    0  55.6M  1 loop /snap/core18/2620
+loop1             7:1    0  55.6M  1 loop /snap/core18/2632
+loop3             7:3    0  63.2M  1 loop /snap/core20/1695
+loop4             7:4    0   382M  1 loop
+├─loop4p1       259:8    0   382M  1 part /media/dinoguei/Debian 11.5.0 amd64 n
+└─loop4p2       259:9    0   2.5M  1 part
+loop5             7:5    0  91.8M  1 loop /snap/lxd/23991
+loop6             7:6    0   382M  1 loop
+├─loop6p1       259:4    0   382M  1 part /media/anvieira/Debian 11.5.0 amd64 n
+└─loop6p2       259:5    0   2.5M  1 part
+loop7             7:7    0  49.7M  1 loop
+	grep "lvm" | wc -l: search by the ones with "lvm" in it and quantify them
+	-gt 0: If the command behind gives a result greater than 0 (man test for mor information)
+	then echo yeS; else echo no; fi: the condition it will output
+
+<ss -ta | grep ESTAB | wc -l>
+
+	Show the number of TCP
+		TCP: Transmission Control Protocol, is the connections made between client and server
+	ss: Shows the communication channels of the machine
+		-ta: the 't' refers to show the TCP's and the 'a' al the TCP sockets
+	grep ESTAB | wc -l: Search only for the ESTAB (established) and it will quantify them
+
+<users | wc -w>
+
+	See the quantity of users logged in the machine
+	users: print the usernames of the person that is logged in the machine
+	wc -w: To quantify the users
+		-w: Counts the words, since the users code it prints all in the same line, we can't use the -l we used to, so instead we need to counts the words
+
+<hostname -I (IP)>
+<ip link | grep "link/ether" | awk '{print $2}' (MAC Address)>
+
+	See the IP and MAC Adress of the machine
+	IP: used to indentify the connection with the network with that device and make part of it
+	MAC Address: Used to ensure the physical address of the device, identifies devices on the network
+	hostname: Shows the host name of the system
+		-I: Shows all the hosts connected networks
+	ip link: Used to show and modify network interfaces
+		grep "link/ether" | awk '{print $2}': To search and print just what we want
+
+<journalctl _COMM=sudo | grep COMMAND | wc -l>
+
+	Number of commands executed with sudo
+	journalctl: Used to see the logs
+		_COOM=sudo: _COOM is use to refer to the path of a executable script, and '=sudo' to go search for the sudo
+	grep COMMAND | wc -l: to search were it says COMMAND and then print the quantity
+
+The final script can look like this:
+
+#!/bin/bash
+
+#Architeture
+arch=$(uname -a)
+
+#Physical CPU
+CPU=$(grep "physical id" /proc/cpuinfo | wc -l)
+
+#Virtual CPU
+vCPU=$(grep "processor" /proc/cpuinfo | wc -l)
+
+#RAM
+Total_RAM=$(free --mega | awk '$1 == "Mem:" {print$2}')
+Used_RAM=$(free --mega | awk '$1 == "Mem:" {print$3}')
+Percent_RAM=$(free --mega | awk '$1 == "Mem:" {printf("(%.2f)\n", $3/$2*100)}')
+
+#Disk
+Total_Disk=$(df -m | grep "/dev/" | grep -v "/boot" | awk '{memory_result += $2} END {printf ("%.0f"), memory_result/1024}')
+Used_Disk=$(df -m | grep "/dev/" | grep -v "/boot" | awk '{memory_use += $3} END {print memory_use}')
+Percent_Disk=$(df -m | grep "/dev/" | grep -v "/boot" | awk '{use += $3} {result += $2} END {printf("(%d)\n"), use/result*100}')
+
+#CPU
+Percent_CPU=$(top -bn1 | grep '%Cpu' | cut -c 9- | xargs | awk '{printf("%.1f"), $1 + $3}')
+
+#RESET
+Reset=$(who -b | awk '$1 == "system" {print $3 " " $4}')
+
+#LVM
+Lvm=$(if [ $(lsblk | grep "lvm" | wc -l) -gt 0 ]; then echo yes; else echo no; fi)
+
+#TCP
+Tcp=$(ss -ta | grep ESTAB | wc -l)
+
+#UserLog
+User=$(users | wc -w)
+
+#Network
+IP=$(hostname -I)
+MAC=$(ip link | grep "link/ether" | awk '{print $2}')
+
+#SudoLog
+Sudo=$(journalctl _COMM=sudo | grep COMMAND | wc -l)
+
+wall "  Architeture: $arch
+        CPU: $CPU
+        vCPU: $vCPU
+        Memory Usage: $Used_RAM/${Total_RAM}MB ($Percent_RAM%)
+        Disk Usage: $Used_Disk/${Total_Disk}GB ($Percent_Disk%)
+        CPU Load: $Percent_CPU%
+        Last Boot: $Reset
+        LVM Use: $Lvm
+        TCP Connections: $Tcp
+        Users Log: $User
+        Network: IP $IP ($MAC)
+        Sudo: $Sudo commands"
+
+The 'wall' writes a message to all users
+To teste this code we can use sh [file_name]
+
+							*Crontab*
+
+<sudo crontab -u root -e>
+
+	crontab: A background processor that will execute 'x' commands in specified files
+		-u: specify the user in where the crontab will be utilized, it must be used with other flags
+		-e: create or edits the crontab
+	Insert in the file the following:
+	*/10 * * * * sh /[script_path]
+	*/10 * * * *: the time interval that we want to command to be executed in this case 10 minutes
+	sh: the command that we want to execute
+	/[script_path]: the path of the file we want to be executed
+
+							*Signature.txt*
+
+The signature.txt it will be the only file we will send to evaluation, in there it will be the signature of our machine
+
+<shasum {VM_name}.vdi>
+
+	Outputs the machines signature
+	shasum: The shasum is used to calcule a sha message resume, sum of cryptographic verification or cryptographic hascode
+		SHA: SHA is the acronym os Secure Hash Algorithm, used to has data and certificate files. Each chunk of data produces a exclusive has that is totally not duplicable by anyother chunck of data. The digital signature is also unic, since it depends of the hash generated from the data
+
+After used the comman shasum and pput the signature inside the file you can't open the machine again, that's because the signature changes whenever you enter, a suggestion is to create a clone of the VM so you work on her if you want
+
+							*Evaluation*
+
+<How a VM works?>
+
+	A VM works just like a normal computer, it as OS, saves files and executes programs.
+	But since a VM is made entirely by software, it need to borrow hardware resourcers from the real computer
+	For example in a VM the CPU of the real computer is used in a virtual model, vCPU
+
+<Choice of Operating system>
+
+	In the subject pdf it says that Debian is easier for rookies
+
+<Basic diferences between CentOS and Debian>
+
+                 CentOS                                             Debian
+  More stable and bigger community                           Less market search
+  Mission critical are hosted in CentOS               More people are choosing Debian
+  Doesn't support a lot of architectures              Has more packages
+  Supports better desktop apps                        Has more servers in use
+  Big gap between atualizations, so it                Updates every 2 years
+    has better stability
+  Is hard to update CentOS                            Is easy to update
+  The GUI is hard                                     More user-friendly
+                              Crashes are rare in both
+
+<Purpose of VM>
+
+	It has as objetive expand the potencial of a sole device, increasing the capabilities and flexibility of the existent hardware
+	For example, if a Mac needs to run Microsoft exclusive tools, we can use a Windows VM instead of buying a new computer
+
+<Diferences between apitude and apt, what APPArmor is>
+
+	Aptitude is a improved version of apt, while apt is a package manager of low level, Aptitutde is a high level one
+	Another big difference is the functionalities both offer. Aptitude has better functionalities in comparasion of apt, for example setting the installation of packages as automatic or manual
+
+	APPArmor is a security module of Linux, that allows the administrator to restrict capabilities of the program
+
+<Advantages of the password policy>
+
+	The principal benefit of the complexity rules of password is that them impose the use of exclusive passowrd that are more difficult to decipher. Many requirements applied, more the number of possible combinations of letters, numbers and characters
+
+	The main disadvantage is that a complex password, will be a lot dificult for the user to remember it. This is not just a problem with to complex passwords, but with anything that requires a high requirements of complexity
+
+Commands used for the evaluation
+
+<ls /usr/bin/*session>
+	Check if it exists or not any graphic interface in use
+<sudo ufw status>
+<sudo service ufw status>
+	See if the ufw is active
+<sudo service ssh status>
+	See if the ssh is active
+<uname -v>
+	See which OS is in use
+<getent group sudo>
+<getent group user42>
+	See if the user is in both groups
+<sudo adduser [username]>
+	Create a new user
+<sudo addgroup evaluating>
+	Create a new group named evaluating
+<sudo adduser [username] evaluating>
+	Add the new user to the group
+<hostname>
+	Check if the hostname is in [login]42
+<sudo nano /etc/hostname>
+	Modify the hostname
+<sudo nano /etc/hosts>
+	Exchange the login for the new one
+<sudo reboot>
+<lsblk>
+	Check the partitions
+<which sudo or dpkg -s sudo>
+	Check if sudo is installed
+<sudo adduser [username] sudo>
+	Introduce the new user to the sudo group
+<nano /etc/sudoers.d/sudo_config>
+	Show the rules for sudo
+<cd /var/log/sudo>
+	Show the logs of the sudo command
+<sudo echo hello42world>
+	See if the file is updated
+<dpkg -s ufw>
+	Verify if the UFW is installed
+<sudo service ufw status>
+	Check if it is active
+<sudo ufw status numbered>
+	List the ports to see if they are actived
+<sudo ufw allow 8080>
+	Create a new rule for the port 8080
+<sudo ufw delete [num_rule]>
+	Delete the new rules
+<which ssh>
+	See if the ssh is installed
+<sudo service ssh status>
+	See if the ssh is activated and with the correct ports open
+<ssh root@localhost -p 4242>
+	See if you can connect directly in the root (it isn't supposed to)
+<sudo crontab -u root -e>
+	Change the time the crontab will execute to 1
+<sudo service crontab stop>
+	Make the crontab stop
+<sudo service crontab start>
+	Make the crontab start
